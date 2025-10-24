@@ -21,6 +21,35 @@ export function getToolManager(): ToolManager | null {
 	return toolManagerGetter ? toolManagerGetter() : null;
 }
 
+/**
+ * Normalize tool arguments to match expected types from tool schemas.
+ * Some LLMs pass objects for 'content' parameters when schemas specify strings.
+ */
+function normalizeToolArguments(
+	args: Record<string, any>,
+	toolName: string,
+): Record<string, any> {
+	// Convert content parameter to string if it's an object
+	if ('content' in args && typeof args.content !== 'string') {
+		if (args.content === null || args.content === undefined) {
+			args.content = '';
+		} else {
+			// Convert objects/arrays to JSON string
+			try {
+				args.content = JSON.stringify(args.content, null, 2);
+				console.warn(
+					`[${toolName}] Content parameter was ${typeof args.content}, converted to JSON string`,
+				);
+			} catch (error) {
+				console.error(`[${toolName}] Failed to stringify content:`, error);
+				args.content = '';
+			}
+		}
+	}
+
+	return args;
+}
+
 export async function processToolUse(toolCall: ToolCall): Promise<ToolResult> {
 	if (!toolRegistryGetter) {
 		throw new Error('Tool registry not initialized');
@@ -42,6 +71,10 @@ export async function processToolUse(toolCall: ToolCall): Promise<ToolResult> {
 				throw new Error(`Invalid tool arguments: ${(e as Error).message}`);
 			}
 		}
+
+		// Normalize arguments (e.g., convert non-string content to strings)
+		parsedArgs = normalizeToolArguments(parsedArgs, toolCall.function.name);
+
 		const result = await handler(parsedArgs);
 		return {
 			tool_call_id: toolCall.id,
