@@ -23,12 +23,12 @@ async chat(
   signal?: AbortSignal,
 ): Promise<LLMChatResponse> {
   // ... setup ...
-  
+
   result = (await modelWithTools.invoke(
     langchainMessages,
     invokeOptions,  // Only contains { signal }
   )) as AIMessage;
-  
+
   // Returns complete response all at once
   return {
     choices: [{
@@ -39,7 +39,8 @@ async chat(
 ```
 
 **Key observations**:
-- Uses `.invoke()` instead of `.stream()` 
+
+- Uses `.invoke()` instead of `.stream()`
 - No streaming callbacks configured
 - No `onToken` parameter exists
 - Response waits for complete LLM generation
@@ -54,8 +55,8 @@ The message handler is **tool-focused** and does NOT handle streaming:
 
 ```typescript
 export async function processToolUse(toolCall: ToolCall): Promise<ToolResult> {
-  // Tool execution logic only
-  // No streaming support
+	// Tool execution logic only
+	// No streaming support
 }
 ```
 
@@ -69,14 +70,15 @@ The `useChatHandler` hook orchestrates the conversation:
 
 ```typescript
 const result = await client.chat(
-  [systemMessage, ...messages],
-  toolManager?.getAllTools() || [],
-  controller.signal,
-  // NO streaming callback parameter
+	[systemMessage, ...messages],
+	toolManager?.getAllTools() || [],
+	controller.signal,
+	// NO streaming callback parameter
 );
 ```
 
 **Process flow**:
+
 1. User types message
 2. `handleChatMessage()` called (line 500)
 3. `setIsThinking(true)` (line 532)
@@ -93,28 +95,29 @@ const result = await client.chat(
 
 ```typescript
 export default memo(function ChatQueue({
-  staticComponents = [],
-  queuedComponents = [],
+	staticComponents = [],
+	queuedComponents = [],
 }: ChatQueueProps) {
-  // Move ALL messages to static - prevents any re-renders
-  const allStaticComponents = useMemo(
-    () => [...staticComponents, ...queuedComponents],
-    [staticComponents, queuedComponents],
-  );
+	// Move ALL messages to static - prevents any re-renders
+	const allStaticComponents = useMemo(
+		() => [...staticComponents, ...queuedComponents],
+		[staticComponents, queuedComponents],
+	);
 
-  return (
-    <Box flexDirection="column">
-      {allStaticComponents.length > 0 && (
-        <Static items={allStaticComponents}>
-          {/* Renders complete messages only */}
-        </Static>
-      )}
-    </Box>
-  );
+	return (
+		<Box flexDirection="column">
+			{allStaticComponents.length > 0 && (
+				<Static items={allStaticComponents}>
+					{/* Renders complete messages only */}
+				</Static>
+			)}
+		</Box>
+	);
 });
 ```
 
 **Key design choice**: Uses Ink's `Static` component to prevent terminal flickering:
+
 - All messages are immediately made static after rendering
 - Designed for no re-renders during long conversations
 - This is the **constraint** that makes streaming challenging
@@ -136,20 +139,21 @@ const [chatComponents, setChatComponents] = useState<React.ReactNode[]>([]);
 const [componentKeyCounter, setComponentKeyCounter] = useState(0);
 
 const addToChatQueue = useCallback(
-  (component: React.ReactNode) => {
-    setChatComponents(prevComponents => {
-      const newComponents = [...prevComponents, componentWithKey];
-      // Keep reasonable limit in memory for performance
-      return newComponents.length > 50
-        ? newComponents.slice(-50)
-        : newComponents;
-    });
-  },
-  [componentKeyCounter],
+	(component: React.ReactNode) => {
+		setChatComponents(prevComponents => {
+			const newComponents = [...prevComponents, componentWithKey];
+			// Keep reasonable limit in memory for performance
+			return newComponents.length > 50
+				? newComponents.slice(-50)
+				: newComponents;
+		});
+	},
+	[componentKeyCounter],
 );
 ```
 
 **State flow**:
+
 1. `messages` - full conversation history (preserved for LLM context)
 2. `displayMessages` - limited to last 30 for UI performance
 3. `chatComponents` - React components queued for rendering
@@ -165,26 +169,29 @@ const addToChatQueue = useCallback(
 
 ```typescript
 export default memo(function AssistantMessage({
-  message,
-  model,
+	message,
+	model,
 }: AssistantMessageProps) {
-  const {colors} = useTheme();
+	const {colors} = useTheme();
 
-  // Render markdown to terminal-formatted text
-  const renderedMessage = useMemo(() => {
-    return parseMarkdown(message, colors);
-  }, [message, colors]);
+	// Render markdown to terminal-formatted text
+	const renderedMessage = useMemo(() => {
+		return parseMarkdown(message, colors);
+	}, [message, colors]);
 
-  return (
-    <Box flexDirection="column" marginBottom={1}>
-      <Text color={colors.primary} bold>{model}:</Text>
-      <Text>{renderedMessage}</Text>
-    </Box>
-  );
+	return (
+		<Box flexDirection="column" marginBottom={1}>
+			<Text color={colors.primary} bold>
+				{model}:
+			</Text>
+			<Text>{renderedMessage}</Text>
+		</Box>
+	);
 });
 ```
 
 **Process**:
+
 - Component is memoized (prevents unnecessary re-renders)
 - Receives complete `message` string
 - Parses markdown once via `useMemo`
@@ -200,36 +207,35 @@ export default memo(function AssistantMessage({
 
 ```typescript
 return (
-  <ThemeContext.Provider value={themeContextValue}>
-    <UIStateProvider>
-      <Box flexDirection="column" padding={1} width="100%">
-        {/* Flexible layout */}
-        <Box flexGrow={1} flexDirection="column" minHeight={0}>
-          {appState.startChat && (
-            <ChatQueue
-              staticComponents={staticComponents}
-              queuedComponents={appState.chatComponents}
-            />
-          )}
-        </Box>
-        
-        {/* Status indicators */}
-        {appState.isThinking && (
-          <ThinkingIndicator />
-        )}
-        
-        {/* User input */}
-        <UserInput
-          onSubmit={handleMessageSubmit}
-          disabled={appState.isThinking}
-        />
-      </Box>
-    </UIStateProvider>
-  </ThemeContext.Provider>
+	<ThemeContext.Provider value={themeContextValue}>
+		<UIStateProvider>
+			<Box flexDirection="column" padding={1} width="100%">
+				{/* Flexible layout */}
+				<Box flexGrow={1} flexDirection="column" minHeight={0}>
+					{appState.startChat && (
+						<ChatQueue
+							staticComponents={staticComponents}
+							queuedComponents={appState.chatComponents}
+						/>
+					)}
+				</Box>
+
+				{/* Status indicators */}
+				{appState.isThinking && <ThinkingIndicator />}
+
+				{/* User input */}
+				<UserInput
+					onSubmit={handleMessageSubmit}
+					disabled={appState.isThinking}
+				/>
+			</Box>
+		</UIStateProvider>
+	</ThemeContext.Provider>
 );
 ```
 
 **Re-render triggers**:
+
 - `appState.chatComponents` changes → ChatQueue re-renders
 - `appState.isThinking` changes → ThinkingIndicator shown/hidden
 - Responses added to queue via `addToChatQueue()`
@@ -245,8 +251,8 @@ return (
 ```typescript
 // LangChain internally streams tokens but doesn't expose them
 result = (await modelWithTools.invoke(
-  langchainMessages,
-  invokeOptions,  // No streaming config
+	langchainMessages,
+	invokeOptions, // No streaming config
 )) as AIMessage;
 
 // Result contains full text immediately
@@ -262,10 +268,10 @@ const fullContent = result.content;
 ```typescript
 // Temporary state during streaming
 interface StreamingState {
-  tokenBuffer: string;      // Accumulates tokens
-  tokenCount: number;       // Tokens since last batch
-  lastEmitTime: Date;      // Track batching interval
-  flushTimer?: NodeJS.Timeout;  // Schedule flush
+	tokenBuffer: string; // Accumulates tokens
+	tokenCount: number; // Tokens since last batch
+	lastEmitTime: Date; // Track batching interval
+	flushTimer?: NodeJS.Timeout; // Schedule flush
 }
 ```
 
@@ -287,29 +293,29 @@ interface StreamingState {
 ```typescript
 // Token calculation with caching
 const getMessageTokens = useCallback(
-  (message: Message) => {
-    const cacheKey = (message.content || '') + message.role;
-    const cachedTokens = messageTokenCache.get(cacheKey);
-    if (cachedTokens !== undefined) {
-      return cachedTokens;
-    }
-    const tokens = Math.ceil((message.content?.length || 0) / 4);
-    return tokens;
-  },
-  [messageTokenCache],
+	(message: Message) => {
+		const cacheKey = (message.content || '') + message.role;
+		const cachedTokens = messageTokenCache.get(cacheKey);
+		if (cachedTokens !== undefined) {
+			return cachedTokens;
+		}
+		const tokens = Math.ceil((message.content?.length || 0) / 4);
+		return tokens;
+	},
+	[messageTokenCache],
 );
 
 // Display limit for UI performance
 const updateMessages = useCallback((newMessages: Message[]) => {
-  setMessages(newMessages);  // Full context for LLM
-  
-  // Limit display for UI
-  const displayLimit = 30;
-  setDisplayMessages(
-    newMessages.length > displayLimit
-      ? newMessages.slice(-displayLimit)
-      : newMessages,
-  );
+	setMessages(newMessages); // Full context for LLM
+
+	// Limit display for UI
+	const displayLimit = 30;
+	setDisplayMessages(
+		newMessages.length > displayLimit
+			? newMessages.slice(-displayLimit)
+			: newMessages,
+	);
 }, []);
 ```
 
@@ -370,14 +376,14 @@ const updateMessages = useCallback((newMessages: Message[]) => {
 
 ### 7.1 Streaming Design Challenges
 
-| Challenge | Severity | Impact |
-|-----------|----------|--------|
-| **Static Component Constraint** | High | Can't update messages in-place; must create new component |
-| **Terminal Flickering** | High | Naive streaming causes visible terminal flicker with `Static` |
-| **React Re-renders** | Medium | 100+ tokens × 1 render/token = 100 re-renders |
-| **Tool Call Detection** | Medium | Must buffer entire response to find XML tool calls |
-| **Cancellation State** | Medium | Partial content should be preserved if cancelled |
-| **Memory Usage** | Low | Token buffer is small (~40 bytes) |
+| Challenge                       | Severity | Impact                                                        |
+| ------------------------------- | -------- | ------------------------------------------------------------- |
+| **Static Component Constraint** | High     | Can't update messages in-place; must create new component     |
+| **Terminal Flickering**         | High     | Naive streaming causes visible terminal flicker with `Static` |
+| **React Re-renders**            | Medium   | 100+ tokens × 1 render/token = 100 re-renders                 |
+| **Tool Call Detection**         | Medium   | Must buffer entire response to find XML tool calls            |
+| **Cancellation State**          | Medium   | Partial content should be preserved if cancelled              |
+| **Memory Usage**                | Low      | Token buffer is small (~40 bytes)                             |
 
 ### 7.2 Current Implementation Gaps
 
@@ -468,10 +474,10 @@ private readonly TOKEN_BATCH_SIZE = 10;
 handleLLMNewToken(token: string) {
   tokenBuffer += token;
   tokenCount++;
-  
+
   const now = Date.now();
   const timeSinceLastEmit = now - lastEmitTime;
-  
+
   // Flush if EITHER condition met:
   if (
     tokenCount >= TOKEN_BATCH_SIZE ||      // Count threshold
@@ -509,22 +515,22 @@ handleLLMNewToken(token: string) {
 
 ### Current Implementation
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `source/langgraph-client.ts` | 290-392 | LLM client (non-streaming `chat()`) |
-| `source/hooks/useChatHandler.tsx` | 76-580 | Chat handler (calls `client.chat()`) |
-| `source/hooks/useAppState.tsx` | 19-228 | Central state management |
-| `source/components/chat-queue.tsx` | 1-37 | Static message rendering |
-| `source/components/assistant-message.tsx` | 1-109 | Assistant message display |
-| `source/types/core.ts` | 1-100 | LLMClient interface (no streaming) |
+| File                                      | Lines   | Purpose                              |
+| ----------------------------------------- | ------- | ------------------------------------ |
+| `source/langgraph-client.ts`              | 290-392 | LLM client (non-streaming `chat()`)  |
+| `source/hooks/useChatHandler.tsx`         | 76-580  | Chat handler (calls `client.chat()`) |
+| `source/hooks/useAppState.tsx`            | 19-228  | Central state management             |
+| `source/components/chat-queue.tsx`        | 1-37    | Static message rendering             |
+| `source/components/assistant-message.tsx` | 1-109   | Assistant message display            |
+| `source/types/core.ts`                    | 1-100   | LLMClient interface (no streaming)   |
 
 ### Streaming References (Documentation Only)
 
-| File | Purpose |
-|------|---------|
-| `.nanocoder/implementation-notes/streaming-support.md` | Initial streaming design |
+| File                                                               | Purpose                             |
+| ------------------------------------------------------------------ | ----------------------------------- |
+| `.nanocoder/implementation-notes/streaming-support.md`             | Initial streaming design            |
 | `.nanocoder/implementation-notes/streaming-with-token-batching.md` | **Recommended** token batching plan |
-| `.nanocoder/implementation-notes/langgraph-migration.md` | Future LangGraph migration |
+| `.nanocoder/implementation-notes/langgraph-migration.md`           | Future LangGraph migration          |
 
 ---
 
@@ -576,11 +582,13 @@ handleLLMNewToken(token: string) {
 ### Option 1: Callbacks (Recommended)
 
 ```typescript
-const callbacks = [{
-  handleLLMNewToken(token: string) {
-    onToken(token);
-  }
-}];
+const callbacks = [
+	{
+		handleLLMNewToken(token: string) {
+			onToken(token);
+		},
+	},
+];
 
 result = await chatModel.invoke(messages, {callbacks});
 ```
@@ -593,8 +601,8 @@ result = await chatModel.invoke(messages, {callbacks});
 ```typescript
 const stream = await chatModel.stream(messages);
 for await (const chunk of stream) {
-  const token = chunk.content;
-  onToken(token);
+	const token = chunk.content;
+	onToken(token);
 }
 ```
 
@@ -606,9 +614,9 @@ for await (const chunk of stream) {
 ```typescript
 const stream = await model.streamEvents(messages, {version: 'v1'});
 for await (const event of stream) {
-  if (event.event === 'on_chat_model_stream') {
-    const token = event.data?.chunk?.content;
-  }
+	if (event.event === 'on_chat_model_stream') {
+		const token = event.data?.chunk?.content;
+	}
 }
 ```
 
@@ -623,4 +631,3 @@ for await (const event of stream) {
 - [ChatOpenAI Streaming](https://js.langchain.com/docs/how_to/chat_streaming/)
 - [Ink Static Component](https://github.com/vadimdemedes/ink#static)
 - Implementation notes in `.nanocoder/implementation-notes/`
-

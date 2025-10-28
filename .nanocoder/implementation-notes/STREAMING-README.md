@@ -15,6 +15,7 @@
 **What**: Complete, ready-to-implement plan for token batching
 **Size**: 22 KB
 **Contains**:
+
 - Motivation and benefits
 - LangChain v1.0 streaming API options
 - Detailed implementation phases (7 phases)
@@ -24,6 +25,7 @@
 - Estimated effort: 12-16 hours
 
 **Key Sections**:
+
 - Phase 1: Add streaming configuration
 - Phase 2: Update LLMClient interface
 - Phase 3: Implement token batching in LangGraphClient
@@ -41,6 +43,7 @@
 **What**: Comprehensive analysis of current architecture and proposed changes
 **Size**: 20 KB
 **Contains**:
+
 - Current streaming flow (non-streaming architecture)
 - LLM client implementation details
 - Message handling & state management
@@ -52,6 +55,7 @@
 - LangChain v1.0 streaming APIs comparison
 
 **Key Insights**:
+
 - How `.invoke()` waits for complete response
 - Why `Static` component prevents terminal flicker
 - Where token batching logic fits
@@ -67,6 +71,7 @@
 **What**: ASCII diagrams and visual flows
 **Size**: 30 KB
 **Contains**:
+
 - High-level component architecture
 - Current flow (wait-for-complete-response)
 - Proposed flow (with token batching)
@@ -76,6 +81,7 @@
 - Performance comparison before/after
 
 **Key Diagrams**:
+
 - Component dependency tree
 - Request flow with annotations
 - State transitions during streaming
@@ -90,6 +96,7 @@
 **What**: Initial streaming design overview
 **Size**: 8.2 KB
 **Contains**:
+
 - Overview of LangChain streaming APIs
 - Option 1: Callbacks (simpler)
 - Option 2: streamEvents() (more flexible)
@@ -111,6 +118,7 @@
 **Note**: This is NOT related to streaming. It's a separate architectural migration.
 
 **Contains**:
+
 - State management with LangGraph
 - Checkpointing and persistence
 - Human-in-the-loop integration
@@ -132,6 +140,7 @@
 ### Complete Implementation (10-13 hours)
 
 Follow all 7 phases in `streaming-with-token-batching.md`:
+
 1. Configuration setup
 2. Interface updates
 3. Token batching logic
@@ -154,6 +163,7 @@ Follow all 7 phases in `streaming-with-token-batching.md`:
 ### The Streaming Challenge
 
 Nanocoder uses Ink's `Static` component to prevent terminal flickering:
+
 - All messages are immediately made static
 - Static components can't be updated after rendering
 - Streaming requires frequent updates
@@ -161,10 +171,12 @@ Nanocoder uses Ink's `Static` component to prevent terminal flickering:
 ### The Solution: Token Batching
 
 **Dual-Threshold Approach**:
+
 - Flush tokens when **10 accumulated** (count threshold)
 - OR flush tokens when **75ms elapsed** (time threshold)
 
 **Result**:
+
 - ~13 FPS smooth animation
 - 100 tokens → 10 re-renders (not 100)
 - No terminal flickering
@@ -188,6 +200,7 @@ AssistantMessage (existing):
 ## Files to Modify
 
 **Core Implementation**:
+
 - `source/types/core.ts` - Add `onToken` callback parameter
 - `source/langgraph-client.ts` - Implement token batching
 - `source/hooks/useChatHandler.tsx` - Add streaming state & callback
@@ -195,9 +208,11 @@ AssistantMessage (existing):
 - `source/app.tsx` - Integrate streaming component
 
 **Configuration**:
+
 - `source/types/config.ts` - Add `streaming` boolean to provider config
 
 **Testing**:
+
 - `source/langgraph-client.spec.ts` - Token batching unit tests
 - `source/components/__tests__/streaming-message.spec.tsx` - Component tests
 
@@ -246,14 +261,17 @@ From `streaming-with-token-batching.md`:
 ## Additional Resources
 
 **LangChain Documentation**:
+
 - [Streaming Concepts](https://js.langchain.com/docs/concepts/streaming/)
 - [How to Stream Responses](https://js.langchain.com/docs/how_to/streaming_llm/)
 - [ChatOpenAI Streaming](https://js.langchain.com/docs/how_to/chat_streaming/)
 
 **Ink Documentation**:
+
 - [Ink Static Component](https://github.com/vadimdemedes/ink#static)
 
 **Nanocoder Documentation**:
+
 - See `CLAUDE.md` in project root for architecture overview
 - Existing implementation notes in this directory
 
@@ -287,10 +305,10 @@ Refer to the specific documentation:
 October 28, 2025
 
 Analysis includes investigation of:
+
 - Current LLM client implementation
 - Message handling architecture
 - UI rendering with Ink's Static component
 - Token processing flow
 - Performance optimization opportunities
 - LangChain v1.0 API capabilities
-

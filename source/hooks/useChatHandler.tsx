@@ -91,6 +91,10 @@ export function useChatHandler({
 	// Conversation state manager for enhanced context
 	const conversationStateManager = React.useRef(new ConversationStateManager());
 
+	// Streaming state
+	const [streamingContent, setStreamingContent] = React.useState('');
+	const [isStreaming, setIsStreaming] = React.useState(false);
+
 	// Reset conversation state when messages are cleared
 	React.useEffect(() => {
 		if (messages.length === 0) {
@@ -175,12 +179,22 @@ export function useChatHandler({
 
 		try {
 			setIsThinking(true);
+			setIsStreaming(true);
+			setStreamingContent('');
 
 			const result = await client.chat(
 				[systemMessage, ...messages],
 				toolManager?.getAllTools() || [],
 				controller.signal,
+				// Streaming callback - accumulate tokens
+				(token: string) => {
+					setStreamingContent(prev => prev + token);
+				},
 			);
+
+			// Streaming complete
+			setIsStreaming(false);
+			setStreamingContent('');
 
 			if (!result || !result.choices || result.choices.length === 0) {
 				throw new Error('No response received from model');
@@ -492,6 +506,8 @@ export function useChatHandler({
 		} finally {
 			setIsThinking(false);
 			setIsCancelling(false);
+			setIsStreaming(false);
+			setStreamingContent('');
 			setAbortController(null);
 		}
 	};
@@ -569,6 +585,8 @@ export function useChatHandler({
 		} finally {
 			setIsThinking(false);
 			setIsCancelling(false);
+			setIsStreaming(false);
+			setStreamingContent('');
 			setAbortController(null);
 		}
 	};
@@ -576,5 +594,7 @@ export function useChatHandler({
 	return {
 		handleChatMessage,
 		processAssistantResponse,
+		streamingContent,
+		isStreaming,
 	};
 }

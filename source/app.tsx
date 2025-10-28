@@ -11,6 +11,7 @@ import ProviderSelector from '@/components/provider-selector';
 import ThemeSelector from '@/components/theme-selector';
 import ThinkingIndicator from '@/components/thinking-indicator';
 import CancellingIndicator from '@/components/cancelling-indicator';
+import {StreamingMessage} from '@/components/streaming-message';
 import ToolConfirmation from '@/components/tool-confirmation';
 import ToolExecutionIndicator from '@/components/tool-execution-indicator';
 import BashExecutionIndicator from '@/components/bash-execution-indicator';
@@ -305,12 +306,20 @@ export default function App() {
 								queuedComponents={appState.chatComponents}
 							/>
 						)}
+
+						{/* Streaming message (live updates, outside Static) */}
+						{chatHandler.isStreaming && (
+							<StreamingMessage
+								content={chatHandler.streamingContent}
+								model={appState.currentModel}
+							/>
+						)}
 					</Box>
 					{appState.startChat && (
 						<Box flexDirection="column" marginLeft={-1}>
 							{appState.isCancelling ? (
 								<CancellingIndicator />
-							) : appState.isThinking ? (
+							) : appState.isThinking && !chatHandler.isStreaming ? (
 								<ThinkingIndicator />
 							) : null}
 							{appState.isModelSelectionMode ? (

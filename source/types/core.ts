@@ -86,6 +86,7 @@ export interface LLMClient {
 		messages: Message[],
 		tools: Tool[],
 		signal?: AbortSignal,
+		onToken?: (token: string) => void,
 	): Promise<LLMChatResponse>;
 	clearContext(): Promise<void>;
 }

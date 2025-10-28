@@ -7,6 +7,7 @@ export interface LangChainProviderConfig {
 	models: string[];
 	requestTimeout?: number;
 	socketTimeout?: number;
+	streaming?: boolean;
 	connectionPool?: {
 		idleTimeout?: number;
 		cumulativeMaxIdleTimeout?: number;
@@ -26,6 +27,7 @@ export interface ProviderConfig {
 	models: string[];
 	requestTimeout?: number;
 	socketTimeout?: number;
+	streaming?: boolean;
 	organizationId?: string;
 	timeout?: number;
 	connectionPool?: {
@@ -44,6 +46,7 @@ export interface AppConfig {
 		models: string[];
 		requestTimeout?: number;
 		socketTimeout?: number;
+		streaming?: boolean;
 		connectionPool?: {
 			idleTimeout?: number;
 			cumulativeMaxIdleTimeout?: number;

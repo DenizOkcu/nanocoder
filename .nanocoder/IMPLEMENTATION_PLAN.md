@@ -32,6 +32,7 @@ This document outlines the phased implementation plan for adding real-time token
 **File**: `source/types/core.ts`
 
 **Changes**:
+
 ```typescript
 export interface LLMClient {
 	getCurrentModel(): string;
@@ -44,7 +45,7 @@ export interface LLMClient {
 		messages: Message[],
 		tools: Tool[],
 		signal?: AbortSignal,
-		onToken?: (token: string) => void,  // NEW
+		onToken?: (token: string) => void, // NEW
 	): Promise<LLMChatResponse>;
 
 	clearContext(): Promise<void>;
@@ -58,6 +59,7 @@ export interface LLMClient {
 **File**: `source/types/config.ts`
 
 **Changes**:
+
 ```typescript
 export interface LangChainProviderConfig {
 	name: string;
@@ -65,7 +67,7 @@ export interface LangChainProviderConfig {
 	models: string[];
 	requestTimeout?: number;
 	socketTimeout?: number;
-	streaming?: boolean;  // NEW - default: true
+	streaming?: boolean; // NEW - default: true
 	connectionPool?: {
 		idleTimeout?: number;
 		cumulativeMaxIdleTimeout?: number;
@@ -84,7 +86,7 @@ export interface ProviderConfig {
 	models: string[];
 	requestTimeout?: number;
 	socketTimeout?: number;
-	streaming?: boolean;  // NEW - default: true
+	streaming?: boolean; // NEW - default: true
 	organizationId?: string;
 	timeout?: number;
 	connectionPool?: {
@@ -102,7 +104,7 @@ export interface AppConfig {
 		models: string[];
 		requestTimeout?: number;
 		socketTimeout?: number;
-		streaming?: boolean;  // NEW - default: true
+		streaming?: boolean; // NEW - default: true
 		connectionPool?: {
 			idleTimeout?: number;
 			cumulativeMaxIdleTimeout?: number;
@@ -121,6 +123,7 @@ export interface AppConfig {
 **Default Behavior**: If `streaming` is undefined, treat as `true` (opt-out model).
 
 ### Deliverables
+
 - [ ] Updated type definitions in `source/types/core.ts`
 - [ ] Updated type definitions in `source/types/config.ts`
 - [ ] TypeScript compilation succeeds (`pnpm test:types`)
@@ -134,6 +137,7 @@ export interface AppConfig {
 **File**: `source/langgraph-client.ts`
 
 **New Constants**:
+
 ```typescript
 export class LangGraphClient implements LLMClient {
 	// ... existing fields ...
@@ -144,6 +148,7 @@ export class LangGraphClient implements LLMClient {
 ```
 
 **New Helper Function**:
+
 ```typescript
 private createTokenBatcher(onToken: (token: string) => void) {
 	let tokenBuffer = '';
@@ -196,6 +201,7 @@ private createTokenBatcher(onToken: (token: string) => void) {
 **File**: `source/langgraph-client.ts` (lines 290-392)
 
 **Changes**:
+
 ```typescript
 async chat(
 	messages: Message[],
@@ -352,6 +358,7 @@ async chat(
 ```
 
 ### Deliverables
+
 - [ ] Token batching logic implemented in `LangGraphClient`
 - [ ] Streaming respects `streaming: false` config
 - [ ] Final flush called after streaming completes
@@ -366,6 +373,7 @@ async chat(
 **File**: `source/hooks/useChatHandler.tsx`
 
 **New State Variables**:
+
 ```typescript
 // Add to existing state in useChatHandler
 const [streamingContent, setStreamingContent] = React.useState('');
@@ -377,6 +385,7 @@ const [isStreaming, setIsStreaming] = React.useState(false);
 **File**: `source/hooks/useChatHandler.tsx`
 
 **Changes to `handleChatMessage` function**:
+
 ```typescript
 const handleChatMessage = async (userMessage: string) => {
 	// ... existing setup ...
@@ -421,7 +430,6 @@ const handleChatMessage = async (userMessage: string) => {
 
 		// Handle tool calls if present (existing logic)
 		// ...
-
 	} catch (error) {
 		// Clean up streaming state on error
 		setIsStreaming(false);
@@ -446,6 +454,7 @@ return {
 ```
 
 ### Deliverables
+
 - [ ] Streaming state added to `useChatHandler`
 - [ ] Message sending logic passes `onToken` callback
 - [ ] State cleanup on error/completion
@@ -514,6 +523,7 @@ StreamingMessage.displayName = 'StreamingMessage';
 ```
 
 ### Deliverables
+
 - [ ] `StreamingMessage` component created
 - [ ] Cursor blink effect implemented
 - [ ] Markdown parsing works during streaming
@@ -529,6 +539,7 @@ StreamingMessage.displayName = 'StreamingMessage';
 **File**: `source/app.tsx`
 
 **Changes**:
+
 ```typescript
 import {StreamingMessage} from '@/components/streaming-message';
 
@@ -578,12 +589,14 @@ export default function App() {
 ```
 
 **Key Points**:
+
 - `StreamingMessage` is rendered **outside** `ChatQueue`'s `Static` component
 - Only shown when `isStreaming` is true
 - Once streaming completes, message moves to `ChatQueue` as a static `AssistantMessage`
 - `ThinkingIndicator` only shown when thinking but NOT streaming (avoid UI overlap)
 
 ### Deliverables
+
 - [ ] `StreamingMessage` integrated into `app.tsx`
 - [ ] Conditional rendering based on `isStreaming` state
 - [ ] Thinking indicator logic updated
@@ -696,6 +709,7 @@ test('StreamingMessage shows cursor', t => {
 **Manual Tests**:
 
 1. **Basic Streaming**:
+
    - [ ] Enable streaming for OpenRouter/OpenAI
    - [ ] Send message: "Write a short poem"
    - [ ] Verify tokens appear progressively
@@ -703,12 +717,14 @@ test('StreamingMessage shows cursor', t => {
    - [ ] Verify no terminal flickering
 
 2. **Non-Streaming Mode**:
+
    - [ ] Set `streaming: false` in config
    - [ ] Send message
    - [ ] Verify thinking indicator shows
    - [ ] Verify complete response appears at once (no streaming)
 
 3. **Tool Calls with Streaming**:
+
    - [ ] Enable streaming
    - [ ] Send message: "Read the README file"
    - [ ] Verify streaming text appears
@@ -716,6 +732,7 @@ test('StreamingMessage shows cursor', t => {
    - [ ] Verify tool confirmation prompt shows
 
 4. **Cancellation**:
+
    - [ ] Start streaming response
    - [ ] Press Ctrl+C mid-stream
    - [ ] Verify partial content is displayed
@@ -723,6 +740,7 @@ test('StreamingMessage shows cursor', t => {
    - [ ] Verify can send new message after cancellation
 
 5. **Long Responses**:
+
    - [ ] Send message: "Explain quantum computing in detail"
    - [ ] Verify smooth streaming animation
    - [ ] Measure re-renders (should be ~10-15 for 100+ tokens)
@@ -735,6 +753,7 @@ test('StreamingMessage shows cursor', t => {
    - [ ] Verify streaming works again
 
 ### Deliverables
+
 - [ ] Unit tests for token batching written
 - [ ] Component tests for `StreamingMessage` written
 - [ ] All integration tests pass
@@ -750,7 +769,8 @@ test('StreamingMessage shows cursor', t => {
 **File**: `README.md`
 
 **Add Section**:
-```markdown
+
+````markdown
 ## Configuration
 
 ### Streaming
@@ -759,30 +779,33 @@ Nanocoder supports real-time token streaming for LLM responses. Streaming is ena
 
 ```json
 {
-  "providers": [
-    {
-      "name": "OpenRouter",
-      "baseUrl": "https://openrouter.ai/api/v1",
-      "apiKey": "${OPENROUTER_API_KEY}",
-      "models": ["anthropic/claude-sonnet-4"],
-      "streaming": true
-    },
-    {
-      "name": "Ollama",
-      "baseUrl": "http://localhost:11434/v1",
-      "models": ["llama3.1:8b"],
-      "streaming": false,
-      "requestTimeout": -1
-    }
-  ]
+	"providers": [
+		{
+			"name": "OpenRouter",
+			"baseUrl": "https://openrouter.ai/api/v1",
+			"apiKey": "${OPENROUTER_API_KEY}",
+			"models": ["anthropic/claude-sonnet-4"],
+			"streaming": true
+		},
+		{
+			"name": "Ollama",
+			"baseUrl": "http://localhost:11434/v1",
+			"models": ["llama3.1:8b"],
+			"streaming": false,
+			"requestTimeout": -1
+		}
+	]
 }
 ```
+````
 
 **When to disable streaming**:
+
 - Local models with slow inference (Ollama on CPU)
 - Terminal emulators with poor rendering performance
 - Preference for complete responses only
-```
+
+````
 
 ### 7.2 Update CLAUDE.md
 
@@ -806,7 +829,7 @@ Nanocoder implements real-time token streaming with intelligent batching:
 - `source/app.tsx`: Integration of streaming component
 
 See `.nanocoder/implementation-notes/streaming-with-token-batching.md` for detailed architecture.
-```
+````
 
 ### 7.3 Create Configuration Examples
 
@@ -814,34 +837,35 @@ See `.nanocoder/implementation-notes/streaming-with-token-batching.md` for detai
 
 ```json
 {
-  "providers": [
-    {
-      "name": "OpenRouter",
-      "baseUrl": "https://openrouter.ai/api/v1",
-      "apiKey": "${OPENROUTER_API_KEY}",
-      "models": ["anthropic/claude-sonnet-4", "openai/gpt-4o"],
-      "streaming": true,
-      "requestTimeout": 120000
-    },
-    {
-      "name": "OpenAI",
-      "baseUrl": "https://api.openai.com/v1",
-      "apiKey": "${OPENAI_API_KEY}",
-      "models": ["gpt-4o", "gpt-4o-mini"],
-      "streaming": true
-    },
-    {
-      "name": "Ollama",
-      "baseUrl": "http://localhost:11434/v1",
-      "models": ["llama3.1:8b", "qwen2.5-coder:7b"],
-      "streaming": false,
-      "requestTimeout": -1
-    }
-  ]
+	"providers": [
+		{
+			"name": "OpenRouter",
+			"baseUrl": "https://openrouter.ai/api/v1",
+			"apiKey": "${OPENROUTER_API_KEY}",
+			"models": ["anthropic/claude-sonnet-4", "openai/gpt-4o"],
+			"streaming": true,
+			"requestTimeout": 120000
+		},
+		{
+			"name": "OpenAI",
+			"baseUrl": "https://api.openai.com/v1",
+			"apiKey": "${OPENAI_API_KEY}",
+			"models": ["gpt-4o", "gpt-4o-mini"],
+			"streaming": true
+		},
+		{
+			"name": "Ollama",
+			"baseUrl": "http://localhost:11434/v1",
+			"models": ["llama3.1:8b", "qwen2.5-coder:7b"],
+			"streaming": false,
+			"requestTimeout": -1
+		}
+	]
 }
 ```
 
 ### Deliverables
+
 - [ ] README updated with streaming configuration docs
 - [ ] CLAUDE.md updated with architecture overview
 - [ ] Example configuration file updated
@@ -854,44 +878,53 @@ See `.nanocoder/implementation-notes/streaming-with-token-batching.md` for detai
 ### 8.1 Handle Edge Cases
 
 **8.1.1 Very Short Responses (<10 tokens)**
+
 - Verify time threshold (75ms) flushes tokens even if count threshold not met
 - Test with message: "Say hi"
 
 **8.1.2 Network Errors During Streaming**
+
 - Simulate network drop mid-stream
 - Verify partial content is preserved
 - Verify error message is user-friendly
 
 **8.1.3 Models Without Streaming Support**
+
 - Test with provider that doesn't support streaming
 - Verify graceful fallback to non-streaming
 
 **8.1.4 XML Tool Calls During Streaming**
+
 - Test models using XML format (e.g., older Claude models)
 - Verify XML not shown during streaming
 - Verify clean content after tool calls removed
 
 **8.1.5 Rapid Provider Switching**
+
 - Switch providers multiple times during conversation
 - Verify streaming config respected for each provider
 
 ### 8.2 Performance Optimization
 
 **8.2.1 Memoization**
+
 - Ensure `StreamingMessage` is memoized
 - Ensure `parseMarkdown` is memoized within component
 - Profile re-renders with React DevTools
 
 **8.2.2 Memory Leak Check**
+
 - Run long conversation (50+ messages)
 - Monitor memory usage
 - Verify timers are cleared properly
 
 **8.2.3 Token Buffer Size**
+
 - Verify buffer is flushed regularly (no unbounded growth)
 - Check memory usage during streaming
 
 ### Deliverables
+
 - [ ] All edge cases tested and handled
 - [ ] Performance profiling completed
 - [ ] No memory leaks detected
@@ -901,16 +934,16 @@ See `.nanocoder/implementation-notes/streaming-with-token-batching.md` for detai
 
 ## Implementation Timeline
 
-| Phase | Duration | Cumulative |
-|-------|----------|-----------|
-| Phase 1: Type System Updates | 1-2 hours | 1-2 hours |
-| Phase 2: Streaming Logic | 3-4 hours | 4-6 hours |
-| Phase 3: Chat Handler State | 2 hours | 6-8 hours |
-| Phase 4: Streaming UI Component | 2 hours | 8-10 hours |
-| Phase 5: App Integration | 1-2 hours | 9-12 hours |
-| Phase 6: Testing | 3-4 hours | 12-16 hours |
-| Phase 7: Documentation | 1-2 hours | 13-18 hours |
-| Phase 8: Polish & Edge Cases | 2-3 hours | 15-21 hours |
+| Phase                           | Duration  | Cumulative  |
+| ------------------------------- | --------- | ----------- |
+| Phase 1: Type System Updates    | 1-2 hours | 1-2 hours   |
+| Phase 2: Streaming Logic        | 3-4 hours | 4-6 hours   |
+| Phase 3: Chat Handler State     | 2 hours   | 6-8 hours   |
+| Phase 4: Streaming UI Component | 2 hours   | 8-10 hours  |
+| Phase 5: App Integration        | 1-2 hours | 9-12 hours  |
+| Phase 6: Testing                | 3-4 hours | 12-16 hours |
+| Phase 7: Documentation          | 1-2 hours | 13-18 hours |
+| Phase 8: Polish & Edge Cases    | 2-3 hours | 15-21 hours |
 
 **Total Estimated Time**: 15-21 hours (2-3 days of focused work)
 
@@ -919,17 +952,20 @@ See `.nanocoder/implementation-notes/streaming-with-token-batching.md` for detai
 ## Rollout Strategy
 
 ### Stage 1: Internal Testing (Phases 1-5)
+
 - Implement core functionality
 - Basic manual testing
 - No external release
 
 ### Stage 2: Beta Testing (Phases 6-7)
+
 - Comprehensive testing
 - Documentation complete
 - Beta release to select users
 - Gather feedback on terminal compatibility
 
 ### Stage 3: General Release (Phase 8)
+
 - Edge cases handled
 - Performance optimized
 - Full release with updated docs
@@ -939,14 +975,14 @@ See `.nanocoder/implementation-notes/streaming-with-token-batching.md` for detai
 
 ## Risks and Mitigation
 
-| Risk | Impact | Likelihood | Mitigation |
-|------|--------|-----------|-----------|
-| **Terminal flickering** | High | Medium | Use Ink's `Static` for historical messages; keep streaming outside Static |
-| **Performance degradation** | High | Low | Token batching reduces re-renders by 90% |
-| **LangChain API changes** | Medium | Low | Lock LangChain version; test thoroughly |
-| **Provider incompatibility** | Medium | Medium | Make streaming optional per-provider |
-| **Tool call detection broken** | High | Low | XML parser runs after streaming completes (existing logic) |
-| **Cancellation state corruption** | Medium | Low | Comprehensive cleanup in try/catch/finally blocks |
+| Risk                              | Impact | Likelihood | Mitigation                                                                |
+| --------------------------------- | ------ | ---------- | ------------------------------------------------------------------------- |
+| **Terminal flickering**           | High   | Medium     | Use Ink's `Static` for historical messages; keep streaming outside Static |
+| **Performance degradation**       | High   | Low        | Token batching reduces re-renders by 90%                                  |
+| **LangChain API changes**         | Medium | Low        | Lock LangChain version; test thoroughly                                   |
+| **Provider incompatibility**      | Medium | Medium     | Make streaming optional per-provider                                      |
+| **Tool call detection broken**    | High   | Low        | XML parser runs after streaming completes (existing logic)                |
+| **Cancellation state corruption** | Medium | Low        | Comprehensive cleanup in try/catch/finally blocks                         |
 
 ---
 

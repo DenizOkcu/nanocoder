@@ -486,7 +486,7 @@ LLM Response Generation
 └─ (End of stream)
    │
    ▼ Final onToken call (flush remaining)
-   
+
    Final streamingContent: "Hello world! How can I help you?"
 ```
 
@@ -514,7 +514,7 @@ Ready
 Timeline:
 0s ─── 5s ──────────────────────────────────────────────────
       [Thinking]          [Complete response]
-      
+
 User experience: Long wait, then sudden response
 ```
 

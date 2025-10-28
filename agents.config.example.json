@@ -5,12 +5,15 @@
 				"name": "OpenRouter",
 				"baseUrl": "https://openrouter.ai/api/v1",
 				"apiKey": "your-openrouter-api-key-here",
-				"models": ["openai/gpt-4o-mini", "anthropic/claude-3-haiku"]
+				"models": ["openai/gpt-4o-mini", "anthropic/claude-3-haiku"],
+				"streaming": true
 			},
 			{
 				"name": "Local Ollama",
 				"baseUrl": "http://localhost:11434/v1",
-				"models": ["llama3.2", "qwen2.5-coder"]
+				"models": ["llama3.2", "qwen2.5-coder"],
+				"streaming": false,
+				"requestTimeout": -1
 			},
 			{
 				"name": "OpenAI Compatible",

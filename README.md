@@ -208,6 +208,43 @@ It is recommended to set both `requestTimeout` and `socketTimeout` to the same v
 }
 ```
 
+**Streaming Configuration:**
+
+Nanocoder supports real-time token streaming for LLM responses, displaying AI output as it's generated instead of waiting for complete responses. Streaming is enabled by default but can be disabled per-provider:
+
+- `streaming`: (Optional) Enable/disable real-time streaming for this provider. Defaults to `true`.
+
+**When to disable streaming:**
+
+- Local models with slow inference (Ollama on CPU)
+- Terminal emulators with poor rendering performance
+- Preference for complete responses only
+
+**Example with Streaming Configuration:**
+
+```json
+{
+	"nanocoder": {
+		"providers": [
+			{
+				"name": "OpenRouter",
+				"baseUrl": "https://openrouter.ai/api/v1",
+				"apiKey": "${OPENROUTER_API_KEY}",
+				"models": ["anthropic/claude-sonnet-4"],
+				"streaming": true
+			},
+			{
+				"name": "Ollama",
+				"baseUrl": "http://localhost:11434/v1",
+				"models": ["llama3.1:8b"],
+				"streaming": false,
+				"requestTimeout": -1
+			}
+		]
+	}
+}
+```
+
 **Troubleshooting Context Length Issues:**
 
 If you experience the model repeating tool calls or getting into loops (especially with multi-turn conversations), this is often caused by insufficient context length settings in your local AI provider:

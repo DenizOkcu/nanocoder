@@ -169,6 +169,10 @@ export class LangGraphClient implements LLMClient {
 	private modelInfoCache: Map<string, ModelInfo> = new Map();
 	private undiciAgent: Agent;
 
+	// Token batching configuration
+	private readonly TOKEN_BATCH_INTERVAL_MS = 75; // ~13 FPS, smooth animation
+	private readonly TOKEN_BATCH_SIZE = 10; // Flush every 10 tokens
+
 	constructor(providerConfig: LangChainProviderConfig) {
 		this.providerConfig = providerConfig;
 		this.availableModels = providerConfig.models;
@@ -287,10 +291,60 @@ export class LangGraphClient implements LLMClient {
 		return Promise.resolve(this.availableModels);
 	}
 
+	/**
+	 * Creates a token batcher that accumulates tokens and emits them in batches
+	 * based on count threshold or time threshold.
+	 */
+	private createTokenBatcher(onToken: (token: string) => void) {
+		let tokenBuffer = '';
+		let tokenCount = 0;
+		let lastEmitTime = Date.now();
+		let flushTimer: NodeJS.Timeout | null = null;
+
+		const flush = () => {
+			if (tokenBuffer) {
+				onToken(tokenBuffer);
+				tokenBuffer = '';
+				tokenCount = 0;
+			}
+			if (flushTimer) {
+				clearTimeout(flushTimer);
+				flushTimer = null;
+			}
+		};
+
+		const handleToken = (token: string) => {
+			tokenBuffer += token;
+			tokenCount++;
+
+			const now = Date.now();
+			const timeSinceLastEmit = now - lastEmitTime;
+
+			// Flush if count threshold OR time threshold met
+			if (
+				tokenCount >= this.TOKEN_BATCH_SIZE ||
+				timeSinceLastEmit >= this.TOKEN_BATCH_INTERVAL_MS
+			) {
+				flush();
+				lastEmitTime = now;
+			} else if (!flushTimer) {
+				// Schedule flush for remaining time
+				const remainingTime = this.TOKEN_BATCH_INTERVAL_MS - timeSinceLastEmit;
+				flushTimer = setTimeout(() => {
+					flush();
+					lastEmitTime = Date.now();
+				}, remainingTime);
+			}
+		};
+
+		return {handleToken, flush};
+	}
+
 	async chat(
 		messages: Message[],
 		tools: Tool[],
 		signal?: AbortSignal,
+		onToken?: (token: string) => void,
 	): Promise<LLMChatResponse> {
 		// Check if already aborted before starting
 		if (signal?.aborted) {
@@ -301,43 +355,99 @@ export class LangGraphClient implements LLMClient {
 			const langchainMessages = messages.map(convertToLangChainMessage);
 			let result: AIMessage;
 
-			// Create options object with abort signal if provided
-			const invokeOptions = signal ? {signal} : {};
+			// Check if streaming is enabled for this provider
+			const streamingEnabled =
+				this.providerConfig.streaming !== false && !!onToken;
 
-			// Try to bind tools if available - fallback to XML parsing
-			if (tools.length > 0) {
-				try {
-					// Convert our tools to LangChain format
-					const langchainTools = tools.map(tool => ({
-						type: 'function' as const,
-						function: {
-							name: tool.function.name,
-							description: tool.function.description,
-							parameters: tool.function.parameters,
+			// Create invoke options
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const invokeOptions: any = signal ? {signal} : {};
+
+			// Set up streaming callback if enabled
+			if (streamingEnabled && onToken) {
+				const batcher = this.createTokenBatcher(onToken);
+
+				invokeOptions.callbacks = [
+					{
+						handleLLMNewToken: (token: string) => {
+							batcher.handleToken(token);
 						},
-					}));
+					},
+				];
 
-					// Try binding tools to the model
-					const modelWithTools = this.chatModel.bindTools(langchainTools, {
-						parallel_tool_calls: false,
-					});
-					result = (await modelWithTools.invoke(
-						langchainMessages,
-						invokeOptions,
-					)) as AIMessage;
-				} catch {
-					// Tool binding failed, fall back to base model
+				// Ensure final flush after invoke completes
+				try {
+					// Try to bind tools and invoke
+					if (tools.length > 0) {
+						try {
+							const langchainTools = tools.map(tool => ({
+								type: 'function' as const,
+								function: {
+									name: tool.function.name,
+									description: tool.function.description,
+									parameters: tool.function.parameters,
+								},
+							}));
+
+							const modelWithTools = this.chatModel.bindTools(langchainTools, {
+								parallel_tool_calls: false,
+							});
+							result = (await modelWithTools.invoke(
+								langchainMessages,
+								invokeOptions,
+							)) as AIMessage;
+						} catch {
+							result = (await this.chatModel.invoke(
+								langchainMessages,
+								invokeOptions,
+							)) as AIMessage;
+						}
+					} else {
+						result = (await this.chatModel.invoke(
+							langchainMessages,
+							invokeOptions,
+						)) as AIMessage;
+					}
+
+					// Flush any remaining tokens
+					batcher.flush();
+				} catch (error) {
+					// Ensure flush even on error
+					batcher.flush();
+					throw error;
+				}
+			} else {
+				// Non-streaming path (existing logic)
+				if (tools.length > 0) {
+					try {
+						const langchainTools = tools.map(tool => ({
+							type: 'function' as const,
+							function: {
+								name: tool.function.name,
+								description: tool.function.description,
+								parameters: tool.function.parameters,
+							},
+						}));
+
+						const modelWithTools = this.chatModel.bindTools(langchainTools, {
+							parallel_tool_calls: false,
+						});
+						result = (await modelWithTools.invoke(
+							langchainMessages,
+							invokeOptions,
+						)) as AIMessage;
+					} catch {
+						result = (await this.chatModel.invoke(
+							langchainMessages,
+							invokeOptions,
+						)) as AIMessage;
+					}
+				} else {
 					result = (await this.chatModel.invoke(
 						langchainMessages,
 						invokeOptions,
 					)) as AIMessage;
 				}
-			} else {
-				// No tools, use base model
-				result = (await this.chatModel.invoke(
-					langchainMessages,
-					invokeOptions,
-				)) as AIMessage;
 			}
 
 			let convertedMessage = convertFromLangChainMessage(result);
