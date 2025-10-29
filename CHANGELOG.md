@@ -1,3 +1,10 @@
+## 1.14.1
+
+- Switched out Jina.ai that fetched LLM optimised markdown from URLs to our own, on-device, private Nano Collective package: [get-md](https://github.com/Nano-Collective/get-md).
+- `search_files` tool now ignores contents of `.gitignore` over just a pre-defined set of common ignores.
+- If you use OpenRouter as a provider, it now logs "Nancoder" as the agent.
+- Fix: Added `parallel_tool_calls` to be equal to `false` in the LangGraph client. This helps bring some stability and flow to models especially when editing files.
+
 ## 1.14.0
 
 - Added `/setup-config` command - an interactive wizard for configuring LLM providers and MCP servers with built-in templates for popular services. Includes real-time validation, manual editing support (Ctrl+E), and automatic configuration reload.

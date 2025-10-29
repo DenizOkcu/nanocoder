@@ -1,7 +1,7 @@
 {
 	"name": "@nanocollective/nanocoder",
 	"main": "dist/cli.js",
-	"version": "1.14.0",
+	"version": "1.14.1",
 	"description": "A local-first CLI coding agent that brings the power of agentic coding tools like Claude Code and Gemini CLI to local models or controlled APIs like OpenRouter",
 	"keywords": [
 		"cli",
@@ -54,6 +54,7 @@
 		"@langchain/openai": "^1.0.0",
 		"@mishieck/ink-titled-box": "^0.3.0",
 		"@modelcontextprotocol/sdk": "^1.17.3",
+		"@nanocollective/get-md": "^1.0.0",
 		"cheerio": "^1.1.2",
 		"cli-highlight": "^2.1.11",
 		"dotenv": "^17.2.3",

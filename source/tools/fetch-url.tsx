@@ -1,4 +1,4 @@
-import {fetch} from 'undici';
+import {convertToMarkdown} from '@nanocollective/get-md';
 import React from 'react';
 import {Text, Box} from 'ink';
 import type {ToolHandler, ToolDefinition} from '@/types/index';
@@ -17,23 +17,11 @@ const handler: ToolHandler = async (args: FetchArgs): Promise<string> => {
 		throw new Error(`Invalid URL: ${args.url}`);
 	}
 
-	// Use Jina AI Reader to convert URL to LLM-friendly markdown
-	const jinaUrl = `https://r.jina.ai/${args.url}`;
-
 	try {
-		const response = await fetch(jinaUrl, {
-			headers: {
-				Accept: 'text/plain',
-			},
-			signal: AbortSignal.timeout(15000), // 15 second timeout
-			method: 'GET',
-		});
+		// Use get-md to convert URL to LLM-friendly markdown
+		const result = await convertToMarkdown(args.url);
 
-		if (!response.ok) {
-			throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-		}
-
-		const content = await response.text();
+		const content = result.markdown;
 
 		if (!content || content.length === 0) {
 			throw new Error('No content returned from URL');
@@ -48,9 +36,6 @@ const handler: ToolHandler = async (args: FetchArgs): Promise<string> => {
 
 		return content;
 	} catch (error: unknown) {
-		if (error instanceof Error && error.name === 'AbortError') {
-			throw new Error(`Request timeout: URL took too long to fetch (>15s)`);
-		}
 		const message = error instanceof Error ? error.message : 'Unknown error';
 		throw new Error(`Failed to fetch URL: ${message}`);
 	}
@@ -169,7 +154,7 @@ export const fetchUrlTool: ToolDefinition = {
 		function: {
 			name: 'fetch_url',
 			description:
-				'Fetch and convert any URL to clean, LLM-friendly markdown text. Useful for reading documentation, articles, or web content. Supports images (with captions) and PDFs.',
+				'Fetch and convert any URL to clean, LLM-friendly markdown text using @nanocollective/get-md. Automatically extracts main content, removes ads/navigation, and converts to well-structured markdown. Useful for reading documentation, articles, or web content.',
 			parameters: {
 				type: 'object',
 				properties: {
